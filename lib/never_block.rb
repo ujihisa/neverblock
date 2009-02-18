@@ -2,8 +2,6 @@
 # Copyright:: Copyright (c) 2008 eSpace, Inc.
 # License::   Distributes under the same terms as Ruby
 
-$:.unshift File.expand_path(File.dirname(__FILE__))
-
 # Thanks to Aman Gupta for writing the Ruby 1.8 Fiber simulator
 unless defined? Fiber
   require 'thread'

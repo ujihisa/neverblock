@@ -5,18 +5,26 @@ module NeverBlock
       # Attaches the connection socket to an event loop and adds a callback
       # to the fiber's callbacks that unregisters the connection from event loop
       # Raises NB::NBError
-      def register_with_event_loop
-        #puts ">>>>>register_with_event_loop"
+      def register_with_event_loop        
         if EM.reactor_running?
-          @fiber = Fiber.current
-          #puts ">>>>>register_with_event_loop fiber #{@fiber.inspect}"
-          # When there's no previous em_connection
-          key = em_connection_with_pool_key
-          unless @fiber[key]
-            @fiber[key] = EM::attach(socket,EMConnectionHandler,self)
+          if @fiber.nil? && @em_connection.nil?
+            # This connection hasn't been visited by a fiber recently and
+            # it's not attached to the event loop
+            @fiber = Fiber.current
+            @em_connection = EM::attach(socket,EMConnectionHandler,self)
             @fiber[:callbacks] << self.method(:unregister_from_event_loop)
-            @fiber[:em_keys] << key
-          end
+          elsif @em_connection
+            # This connection has been visited by a fiber before and it already
+            # set the callbacks to unregister it. just update the fiber. Either
+            # a new fiber is trying to use the connection or the first one wich
+            # has the callbacks. The case of a new fiber can happen when
+            # ConnectionPool#process_queue is called where a fiber resumes
+            # another fiber
+            @fiber = Fiber.current
+          else
+            # Something has gone wrong !
+            raise ::NB::NBError.new("FiberedDBConnection: Something has gone wrong !")
+          end       
         else
           raise ::NB::NBError.new("FiberedDBConnection: EventMachine reactor not running")
         end
@@ -24,11 +32,10 @@ module NeverBlock
 
       # Unattaches the connection socket from the event loop
       def unregister_from_event_loop
-        #puts ">>>>>unregister_from_event_loop #{self.inspect} #{@fiber.inspect}"
-        key = @fiber[:em_keys].pop
-        if em_c = @fiber[key]
-          em_c.detach
-          @fiber[key] = nil
+        if @em_connection
+          @em_connection.detach
+          @em_connection = nil
+          @fiber = nil
           true
         else
           false
@@ -44,19 +51,13 @@ module NeverBlock
 
       # Closes the connection using event loop
       def event_loop_connection_close
-        key = em_connection_with_pool_key
-        @fiber[key].close_connection if @fiber[key]
+        @em_connection.close_connection if @em_connection
       end
            
-      # The callback, this is called whenever
-      # there is data available at the socket
+      # The event loop callback, this is called whenever there is data
+      # available at the socket
       def resume_command
         @fiber.resume if @fiber
-      end
-      
-      private
-      def em_connection_with_pool_key
-        "em_#{@fiber[:current_pool_key]}".intern
       end
     end
     

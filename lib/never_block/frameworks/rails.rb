@@ -17,6 +17,7 @@ class Mutex
 end
 
 require 'action_controller'
+
 class ActionController::Base
 
   # Mark some actions to execute in a blocking manner overriding the default

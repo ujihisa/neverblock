@@ -19,7 +19,6 @@ Gem::Specification.new do |s|
 		"lib/never_block/pool/fiber_pool.rb", 
 		"lib/never_block/pool/fibered_connection_pool.rb",
     "lib/never_block/frameworks/rails.rb",
-    "lib/never_block/frameworks/activerecord.rb",
     "lib/never_block/servers/thin.rb",
     "lib/never_block/servers/mongrel.rb",
     "lib/never_block/db/fibered_postgres_connection.rb",
@@ -30,6 +29,7 @@ Gem::Specification.new do |s|
     "lib/never_block/io/fibered_io_connection.rb",
     "lib/never_block/socket/socket_neverblock.rb",
 		"lib/never_block/socket/fix_sockets.rb",
+    "lib/active_record/neverblock_connection_pool.rb",
     "lib/active_record/connection_adapters/neverblock_postgresql_adapter.rb",
     "lib/active_record/connection_adapters/neverblock_mysql_adapter.rb"
   ]
