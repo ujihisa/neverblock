@@ -79,7 +79,7 @@ describe NB::Pool::FiberedConnectionPool do
     t_conn = nil
     fpool.spawn do
       #announce the beginning of a transaction
-      @pool.hold(true) {|conn| t_conn = conn}
+      @pool.hold {|conn| t_conn = conn}
 
       #another call to hold should get the same transaction's connection
       @pool.hold {|conn| t_conn.should == conn}
@@ -87,7 +87,7 @@ describe NB::Pool::FiberedConnectionPool do
       #release the transaction connection
       @pool.hold do |conn|
         t_conn.should == conn
-        @pool.release(Fiber.current, conn)
+        @pool.__send__ :release
       end
 
       #will now get a connection other than the transation's one (since there
