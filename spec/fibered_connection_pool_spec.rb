@@ -33,7 +33,7 @@ describe NB::Pool::FiberedConnectionPool do
   it "should create connections up to :size and queue other requests" do
     # prepate the fiber pool
     fpool = NB::Pool::FiberPool.new(15)
-    fibers = []; fpool.fibers.each {|f| fibers << f}
+    fibers = fpool.fibers.dup
     progress  = Array.new(15, false)
 
     # send 15 requests to the connection pool (of size 10)
@@ -58,10 +58,10 @@ describe NB::Pool::FiberedConnectionPool do
     @pool.instance_variable_get(:@busy_connections).length.should == 10
     @pool.instance_variable_get(:@queue).length.should == 5
 
-    #resume first request which will finish it and will also handle the
-    #queued requests
+    # resume first request which will finish it and will also handle the
+    # queued requests
     fibers[0].resume
-    [0,*10..14].each {|i| fibers[i].should == progress[i]}
+    [0, *10..14].each {|i| fibers[i].should == progress[i]}
     [*1..9].each do |i|
       progress[i].should == false
       fibers[i].resume
@@ -70,7 +70,7 @@ describe NB::Pool::FiberedConnectionPool do
   end
 
   it "should use the same connection in a transaction" do
-    #make sure there are more than one connection in the pool
+    # make sure there are more than one connection in the pool
     @pool = NB::Pool::FiberedConnectionPool.new(:size => 10, :eager => true) do
       MockConnection.new
     end
@@ -78,21 +78,21 @@ describe NB::Pool::FiberedConnectionPool do
     fibers = []; fpool.fibers.each {|f| fibers << f}
     t_conn = nil
     fpool.spawn do
-      #announce the beginning of a transaction
+      # announce the beginning of a transaction
       @pool.hold {|conn| t_conn = conn}
 
-      #another call to hold should get the same transaction's connection
+      # another call to hold should get the same transaction's connection
       @pool.hold {|conn| t_conn.should == conn}
 
-      #release the transaction connection
+      # release the transaction connection
       @pool.hold do |conn|
         t_conn.should == conn
         @pool.__send__ :release
       end
 
-      #will now get a connection other than the transation's one (since there
-      #are many connections. If there was only one then it would have been
-      #returned anyways)
+      # will now get a connection other than the transation's one (since there
+      # are many connections. If there was only one then it would have been
+      # returned anyways)
       @pool.hold {|conn| t_conn.should_not == conn}
     end
   end
