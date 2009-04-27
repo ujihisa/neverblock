@@ -24,9 +24,6 @@ describe NB::Pool::FiberedConnectionPool do
   end
 
   it "should create and yield a connection if :size not reached" do
-    @pool.instance_variable_get(:@connections).length.should == 0
-    @pool.instance_variable_get(:@busy_connections).length.should == 0
-
     @pool.hold {|conn| conn.should be_instance_of(MockConnection)}
 
     @pool.instance_variable_get(:@connections).length.should == 1
